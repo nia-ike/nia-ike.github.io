@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <meta name="author" content="nia-ike">
+
+
+
+
+
+<title>基于RT-Thread设备框架的RS485设备开发 | Hexo</title>
+
+
+
+    <link rel="icon" href="/favicon.ico">
+
+
+
+
+    <!-- stylesheets list from _config.yml -->
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+
+
+
+    <!-- scripts list from _config.yml -->
+    
+    <script src="/js/script.js"></script>
+    
+    <script src="/js/tocbot.min.js"></script>
+    
+
+
+
+    
+    
+        
+    
+
+
+<meta name="generator" content="Hexo 7.0.0"></head>
+
+<body>
+    <script>
+        // this function is used to check current theme before page loaded.
+        (() => {
+            const currentTheme = window.localStorage && window.localStorage.getItem('theme') || '';
+            const isDark = currentTheme === 'dark';
+            const pagebody = document.getElementsByTagName('body')[0]
+            if (isDark) {
+                pagebody.classList.add('dark-theme');
+                // mobile
+                document.getElementById("mobile-toggle-theme").innerText = "· Dark"
+            } else {
+                pagebody.classList.remove('dark-theme');
+                // mobile
+                document.getElementById("mobile-toggle-theme").innerText = "· Light"
+            }
+        })();
+    </script>
+
+    <div class="wrapper">
+        <header>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-header header-logo"><a href="/">nia-ike&#39;s blog</a></div>
+            <div class="menu navbar-right">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/category">Categories</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+                <input id="switch_default" type="checkbox" class="switch_default">
+                <label for="switch_default" class="toggleBtn"></label>
+            </div>
+        </div>
+    </nav>
+
+    
+    <nav class="navbar-mobile" id="nav-mobile">
+        <div class="container">
+            <div class="navbar-header">
+                <div>
+                    <a href="/">nia-ike&#39;s blog</a><a id="mobile-toggle-theme">·&nbsp;Light</a>
+                </div>
+                <div class="menu-toggle" onclick="mobileBtn()">&#9776; Menu</div>
+            </div>
+            <div class="menu" id="mobile-menu">
+                
+                    <a class="menu-item" href="/archives">Posts</a>
+                
+                    <a class="menu-item" href="/category">Categories</a>
+                
+                    <a class="menu-item" href="/tag">Tags</a>
+                
+                    <a class="menu-item" href="/about">About</a>
+                
+            </div>
+        </div>
+    </nav>
+
+</header>
+<script>
+    var mobileBtn = function f() {
+        var toggleMenu = document.getElementsByClassName("menu-toggle")[0];
+        var mobileMenu = document.getElementById("mobile-menu");
+        if(toggleMenu.classList.contains("active")){
+           toggleMenu.classList.remove("active")
+            mobileMenu.classList.remove("active")
+        }else{
+            toggleMenu.classList.add("active")
+            mobileMenu.classList.add("active")
+        }
+    }
+</script>
+            <div class="main">
+                <div class="container">
+    
+    
+        <div class="post-toc">
+    <div class="tocbot-list">
+    </div>
+    <div class="tocbot-list-menu">
+        <a class="tocbot-toc-expand" onclick="expand_toc()">Expand all</a>
+        <a onclick="go_top()">Back to top</a>
+        <a onclick="go_bottom()">Go to bottom</a>
+    </div>
+</div>
+
+<script>
+    var tocbot_timer;
+    var DEPTH_MAX = 6; // 为 6 时展开所有
+    var tocbot_default_config = {
+        tocSelector: '.tocbot-list',
+        contentSelector: '.post-content',
+        headingSelector: 'h1, h2, h3, h4, h5',
+        orderedList: false,
+        scrollSmooth: true,
+        onClick: extend_click,
+    };
+
+    function extend_click() {
+        clearTimeout(tocbot_timer);
+        tocbot_timer = setTimeout(function() {
+            tocbot.refresh(obj_merge(tocbot_default_config, {
+                hasInnerContainers: true
+            }));
+        }, 420); // 这个值是由 tocbot 源码里定义的 scrollSmoothDuration 得来的
+    }
+
+    document.ready(function() {
+        tocbot.init(obj_merge(tocbot_default_config, {
+            collapseDepth: 1
+        }));
+    });
+
+    function expand_toc() {
+        var b = document.querySelector('.tocbot-toc-expand');
+        var expanded = b.getAttribute('data-expanded');
+        expanded ? b.removeAttribute('data-expanded') : b.setAttribute('data-expanded', true);
+        tocbot.refresh(obj_merge(tocbot_default_config, {
+            collapseDepth: expanded ? 1 : DEPTH_MAX
+        }));
+        b.innerText = expanded ? 'Expand all' : 'Collapse all';
+    }
+
+    function go_top() {
+        window.scrollTo(0, 0);
+    }
+
+    function go_bottom() {
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function obj_merge(target, source) {
+        for (var item in source) {
+            if (source.hasOwnProperty(item)) {
+                target[item] = source[item];
+            }
+        }
+        return target;
+    }
+</script>
+    
+
+    
+    <article class="post-wrap">
+        <header class="post-header">
+            <h1 class="post-title">基于RT-Thread设备框架的RS485设备开发</h1>
+            
+                <div class="post-meta">
+                    
+                        Author: <a itemprop="author" rel="author" href="/">nia-ike</a>
+                    
+
+                    
+                        <span class="post-time">
+                        Date: <a href="#">November 18, 2023&nbsp;&nbsp;21:06:42</a>
+                        </span>
+                    
+                    
+                        <span class="post-category">
+                    Category:
+                            
+                                <a href="/categories/Development-log/">Development log</a>
+                            
+                        </span>
+                    
+                </div>
+            
+        </header>
+
+        <div class="post-content">
+            <p>文件摘要：</p>
+<!-- <center> -->
+
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>版本号</th>
+<th>修订记录</th>
+<th>修订人</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>20230904</td>
+<td>v0.1</td>
+<td>初稿。</td>
+<td>yanshh</td>
+<td></td>
+</tr>
+<tr>
+<td>20230906</td>
+<td>v0.2</td>
+<td>1. 将rs485抽象为一个对象，使用RT-Thread的设备注册的方式管理多路rs485。<br> 2. 调整rs485设备驱动数据结构，将用户不可访问的数据下放到rs485驱动层中。<br> 3. 提供的操作接口中允许用户根据芯片平台自行实现中断发送逻辑。</td>
+<td>yanshh</td>
+<td></td>
+</tr>
+<tr>
+<td>20230910</td>
+<td>v0.3</td>
+<td>1. 再次调整rs485设备结构，与uart合并为一层，减少依赖serial device和hwtimer device，优化系统资源。<br> 2. 归一化与硬件相关的移植接口。<br> 3. 将与硬件相关的数据结构挪至.c文件，规避应用层的调用风险。</td>
+<td>yanshh</td>
+<td></td>
+</tr>
+<tr>
+<td>20230912</td>
+<td>v0.4</td>
+<td>1. 为使rs485硬件兼容finsh组件和现有仪表产品通讯应用，引用serial.h头文件，重新实现serial设备接口：a. read接口中，只将数据从底层拷贝到应用层。根据应用层（超时邮箱句柄）的配置决定进行拷贝数据前，是否发送分帧信号（字节数）。b. write接口中，只实现中断方式发送数据。<br> 2. 对rs485设备来说，需要扩展的接口可以通过继承serial设备的方式来扩展，避免直接修改到serial接口文件：如帧超时邮箱配置。<br> 3. 将rs485设备的收发缓冲区都变更为ringbuffer，避免数据覆盖。<br> 4. 兼容finsh组件，支持系统启动到启动完成后，rt_kprintf()由查询发送到中断发送的转变。</td>
+<td>yanshh</td>
+<td></td>
+</tr>
+<tr>
+<td>20230918</td>
+<td>v0.5</td>
+<td>1. 将rs485设备层与uart硬件驱动层分离，本次评审内容只涉及rs485设备层。<br> 2. 将评审文档主题由通讯模块方案设计更改为RS485设备方案设计。<br> 3. 增加rs485设备作为console设备使用时的兼容性描述。<br> 4. 完善rs485设备作为ModbusRTU应用时，1ms硬件定时器的分帧回调注册过程描述。<br> 5. 说明rs485设备的继承关系，继承的serial设备结构的接口文件中声明的函数需实现。</td>
+<td>yanshh</td>
+<td></td>
+</tr>
+<tr>
+<td>20231115</td>
+<td>v0.6</td>
+<td>1. RS485设备的收发缓冲区将由驱动层指定，解决收发缓冲区资源配置一致时资源使用率不合理的情况。<br> 2. 增加接收接口超时、接收帧间隔超时字符数的配置。</td>
+<td>yanshh</td>
+<td></td>
+</tr>
+</tbody></table>
+<!-- </center> -->
+
+<hr>
+<!-- vscode-markdown-toc -->
+<ul>
+<li><ol>
+<li><a href="#">引言</a></li>
+</ol>
+<ul>
+<li>1.1. <a href="#-1">背景</a></li>
+<li>1.2. <a href="#-1">产品需求列表</a></li>
+<li>1.3. <a href="#-1">产品信息</a></li>
+<li>1.4. <a href="#-1">术语和缩略语</a></li>
+<li>1.5. <a href="#-1">参考资料</a></li>
+</ul>
+</li>
+<li><ol start="2">
+<li><a href="#-1">总体设计</a></li>
+</ol>
+<ul>
+<li>2.1. <a href="#-1">运行环境</a></li>
+<li>2.2. <a href="#-1">模块结构</a></li>
+</ul>
+</li>
+<li><ol start="3">
+<li><a href="#-1">设计说明</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#-1">设计思想</a></li>
+<li>3.2. <a href="#-1">功能模块</a><ul>
+<li>3.2.1. <a href="#RS485">RS485设备接口</a></li>
+<li>3.2.2. <a href="#ModbusRTU">作ModbusRTU通讯用</a></li>
+<li>3.2.3. <a href="#Console">作Console调试用</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><ol start="4">
+<li><a href="#-1">风险识别</a></li>
+</ol>
+</li>
+</ul>
+<!-- vscode-markdown-toc-config
+    numbering=true
+    autoSave=true
+    /vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
+
+
+<h2 id="1-引言"><a href="#1-引言" class="headerlink" title="1. 引言"></a>1. <a name=''></a>引言</h2><h3 id="1-1-背景"><a href="#1-1-背景" class="headerlink" title="1.1. 背景"></a>1.1. <a name='-1'></a>背景</h3><p>&emsp;&emsp;根据各仪表产品特征，考虑基于平台形成通用的RS485设备驱动。使用场景：半双工RS485&#x2F;RS232、全双工Uart的通讯功能。RS485设备驱动在确定了方案之后，需要做软件方案设计。</p>
+<h3 id="1-2-产品需求列表"><a href="#1-2-产品需求列表" class="headerlink" title="1.2. 产品需求列表"></a>1.2. <a name='-1'></a>产品需求列表</h3><!-- <center> -->
+
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>需求</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>RS485设备</td>
+<td>1. 兼容ModbusRTU的分帧处理；<br> 2. 兼容Console&#x2F;Finsh组件的日志打印、调试交互；<br> 3. 支持多路RS485驱动管理；<br> 4. 将协议层与RS485设备解耦，使基于RT485硬传输的应用专注于协议处理。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>硬件串口驱动</td>
+<td>对接RS485设备接口，完成硬件串口资源注册。</td>
+</tr>
+</tbody></table>
+<!-- </center> -->
+
+<h3 id="1-3-产品信息"><a href="#1-3-产品信息" class="headerlink" title="1.3. 产品信息"></a>1.3. <a name='-1'></a>产品信息</h3><p>软件版本号：V1.0.0<br>测试版本号：1</p>
+<h3 id="1-4-术语和缩略语"><a href="#1-4-术语和缩略语" class="headerlink" title="1.4. 术语和缩略语"></a>1.4. <a name='-1'></a>术语和缩略语</h3><!-- <center> -->
+
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>需求</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>RS485设备</td>
+<td>基于485芯片的半双工通讯协议</td>
+</tr>
+</tbody></table>
+<!-- </center> -->
+
+<h3 id="1-5-参考资料"><a href="#1-5-参考资料" class="headerlink" title="1.5. 参考资料"></a>1.5. <a name='-1'></a>参考资料</h3><p>无。</p>
+<h2 id="2-总体设计"><a href="#2-总体设计" class="headerlink" title="2. 总体设计"></a>2. <a name='-1'></a>总体设计</h2><h3 id="2-1-运行环境"><a href="#2-1-运行环境" class="headerlink" title="2.1. 运行环境"></a>2.1. <a name='-1'></a>运行环境</h3><!-- <center> -->
+
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>描述</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CPU</td>
+<td>FMSH&#x2F;ST<br>Geehy&#x2F;HDSC</td>
+<td>主频：24MHz及以上；<br> RAM：8k或以上；<br> FLASH：32k或以上</td>
+</tr>
+<tr>
+<td>RTOS</td>
+<td>rtthread-lts-3.1.x(v3.1.5.1)</td>
+<td>修复过v3.1.5内核定时器问题的RT-Thread标准版</td>
+</tr>
+<tr>
+<td>IDE</td>
+<td>KEIL V5.29.0.0</td>
+<td></td>
+</tr>
+<tr>
+<td>编程语言</td>
+<td>C语言</td>
+<td></td>
+</tr>
+<tr>
+<td>调试器</td>
+<td>J-LINK(SWD接口)</td>
+<td></td>
+</tr>
+<tr>
+<td>编译器版本</td>
+<td>V5.06 updata 6(build 750)</td>
+<td></td>
+</tr>
+</tbody></table>
+<!-- </center> -->
+
+<h3 id="2-2-模块结构"><a href="#2-2-模块结构" class="headerlink" title="2.2. 模块结构"></a>2.2. <a name='-1'></a>模块结构</h3><!-- <center> -->
+
+<p><img src="/images/accessory/%E5%9F%BA%E4%BA%8ERT-Thread%E8%AE%BE%E5%A4%87%E6%A1%86%E6%9E%B6%E7%9A%84RS485%E8%AE%BE%E5%A4%87/1%E3%80%81%E9%80%9A%E8%AE%AF%E6%A8%A1%E5%9D%97%E7%BB%93%E6%9E%84%E6%A1%86%E5%9B%BE.png" alt="通讯模块结构框图"></p>
+<!-- </center> -->
+
+
+<h2 id="3-设计说明"><a href="#3-设计说明" class="headerlink" title="3. 设计说明"></a>3. <a name='-1'></a>设计说明</h2><h3 id="3-1-设计思想"><a href="#3-1-设计思想" class="headerlink" title="3.1. 设计思想"></a>3.1. <a name='-1'></a>设计思想</h3><ol>
+<li>考虑到平台的通用性，RS485设备驱动采用分层的思想，引入RT-Thread设备框架，将协议解析和硬件设备进行隔离。协议的裁剪、解析将不受芯片的限制，可将协议灵活的移植到任何基于RS485硬件的平台上。</li>
+<li>对RS485设备抽象：<ul>
+<li>对上（协议层）提供标准RT-Thread Device接口：init&#x2F;open&#x2F;close&#x2F;read&#x2F;write&#x2F;control，用于操作RS485设备、配置通讯参数、统一数据收发方式。</li>
+<li>对下（片上串口外设）进行封装，减少芯片替换带来的驱动移植试错成本。</li>
+<li>需兼容系统启动时的console日志输出、finsh组件的调试信息输入&#x2F;出，节约独立的调试串口资源。</li>
+</ul>
+</li>
+</ol>
+<h3 id="3-2-功能模块"><a href="#3-2-功能模块" class="headerlink" title="3.2. 功能模块"></a>3.2. <a name='-1'></a>功能模块</h3><p>&emsp;&emsp;本次设计的RS485驱动依赖于硬件uart、1ms硬件定时器设备和pin设备。参考公司大多数产品通讯驱动实现方式，将ModbusRTU的接收帧超时处理嵌入到RS485设备层中，避免了以前设计方式下驱动移植人员对通讯时序业务逻辑的修改。（注意：由于RS485设备依赖PIN和1msHwTimer设备（对接完GPIO驱动后，PIN设备注册即可使用），因此在创建RS485设备前，需先完成1msHwTimer设备的注册。）</p>
+<!-- <center> -->
+
+<p><img src="/images/accessory/%E5%9F%BA%E4%BA%8ERT-Thread%E8%AE%BE%E5%A4%87%E6%A1%86%E6%9E%B6%E7%9A%84RS485%E8%AE%BE%E5%A4%87/2%E3%80%81RS485%E8%AE%BE%E5%A4%87%E7%9A%84%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB.png" alt="RS485设备的依赖关系"></p>
+<!-- </center> -->
+
+<p>&emsp;&emsp;从下面的RS485设备数据流图可以看出来，对上层协议解析提供了标准RT-Thread Device的I&#x2F;O接口，可以灵活的对接不同的通讯协议；对RS485硬件进行封装，固化接收帧超时处理、数据接收处理、数据发送处理的流程。</p>
+<!-- <center> -->
+
+<p><img src="/images/accessory/%E5%9F%BA%E4%BA%8ERT-Thread%E8%AE%BE%E5%A4%87%E6%A1%86%E6%9E%B6%E7%9A%84RS485%E8%AE%BE%E5%A4%87/3%E3%80%81RS485%E8%AE%BE%E5%A4%87%E6%95%B0%E6%8D%AE%E6%B5%81%E5%9B%BE.png" alt="RS485设备数据流图"></p>
+<!-- </center> -->
+
+<p>&emsp;&emsp;结合现有产品的国产化项目来看，产品的通讯速率不高、主频普遍比较高，芯片平台移植时DMA有一定的复杂度，因此本次设计在只考虑使用串口中断收发的方式实现通讯功能。经过充分评估，串口中断收发方式不会过分增加CPU负荷。为满足ModbusRTU的接收帧间隔时间要求：①接收帧间隔时间至少3.5个字符；②字节间隔时间不得超过1.5个字符（保证串口硬件中断优先级可以满足），需要对接收到的字节数进行帧超时判断：</p>
+<!-- <center> -->
+
+<p><img src="/images/accessory/%E5%9F%BA%E4%BA%8ERT-Thread%E8%AE%BE%E5%A4%87%E6%A1%86%E6%9E%B6%E7%9A%84RS485%E8%AE%BE%E5%A4%87/4%E3%80%81RS485%E8%AE%BE%E5%A4%87%E4%B8%8E%E7%A1%AC%E4%BB%B6%E4%B8%B2%E5%8F%A3%E6%95%B0%E6%8D%AE%E6%94%B6%E5%8F%91%E6%9C%BA%E5%88%B6.png" alt="RS485设备与硬件串口数据收发机制"></p>
+<!-- </center> -->
+
+<ol>
+<li>UART中断按字节接收数据，每接收到1个字节，就要重置接收超时时间为3.5个字符传输时间（tv3_5 &#x3D; 1000ms * 3.5 * 11bits&#x2F;char * 1&#x2F;baudrate）。</li>
+<li>RS485设备的数据接收兼容2种模式：<ul>
+<li>当作为ModbusRTU通讯时，1ms硬件定时器判断字节间间隔时间超过了3.5个字符的传输时间，即发送当前接收到的字节数邮件通知read接口将接收ringbuffer中的数据拷贝至应用层接收缓冲区（固定邮箱超时时间为2s）；</li>
+<li>当作为Console调试时，read接口直接将接收ringbuffer中的数据拷贝至应用层接收缓冲区（无阻塞）。</li>
+</ul>
+</li>
+<li>RS485设备的数据中断发送(2种模式下，只有数据填充到ringbuffer有区别；流模式需要在换行符前增加回车符）的处理方式是一样的：当应用层处理的数据通过RS485设备发送时，RS485将数据拷贝到发送ringbuffer中，再判断是否需要启动中断传输（已经启动过，则说明上一次数据未发送完成，无需再启动中断传输），启动中断传输前，需切换RTS引脚为发送状态，并使能串口发送功能&#x2F;中断。</li>
+</ol>
+<p>&emsp;&emsp;为减少串口资源占用的情况，RS485设备本着简单配置一套驱动，即实现调试串口和ModbusRTU通讯功能灵活切换的设计原则，下面分别对RS485设备的接口、配置和各种应用场景下的使用方式进行详细说明。</p>
+<h4 id="3-2-1-RS485设备接口"><a href="#3-2-1-RS485设备接口" class="headerlink" title="3.2.1. RS485设备接口"></a>3.2.1. <a name='RS485'></a>RS485设备接口</h4><p>&emsp;&emsp;RS485设备继承了RT-Thread的serial设备接口，在此基础上增加了一些与485硬件的相关配置和接口，其功能函数的实现和接口文件独立（rs485.c&#x2F;.h），替换与serial.c，所以serial.h对BSP层提供的接口应该全部实现，以防止其他BSP在引用serial.h中声明的函数式找不到具体实现：</p>
+<!-- <center> -->
+
+<p><img src="/images/accessory/%E5%9F%BA%E4%BA%8ERT-Thread%E8%AE%BE%E5%A4%87%E6%A1%86%E6%9E%B6%E7%9A%84RS485%E8%AE%BE%E5%A4%87/5%E3%80%81RS485%E8%AE%BE%E5%A4%87%E7%BB%A7%E6%89%BF%E5%85%B3%E7%B3%BB.png" alt="RS485设备继承关系"></p>
+<!-- </center> -->
+
+<ol>
+<li>RS485设备的数据结构和接口说明：由于RS485设备是对serial设备的继承，除了对协议层提供了标准的Device接口外，还继承了serial设备对底层串口的功能接口，在此基础上对具体的485硬件进行抽象。为rts管脚、1ms硬件定时器和ModbusRTU帧超时处理提供统一的配置方式。</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**************** 继承的serial设备数据结构接口 ***************/</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rt_serial_device</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rt_device</span>          <span class="title">parent</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">rt_uart_ops</span> *<span class="title">ops</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">serial_configure</span>   <span class="title">config</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> *serial_rx;</span><br><span class="line">    <span class="type">void</span> *serial_tx;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * uart operators</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rt_uart_ops</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">rt_err_t</span> (*configure)(<span class="keyword">struct</span> rt_serial_device *serial, <span class="keyword">struct</span> serial_configure *cfg);</span><br><span class="line">    <span class="type">rt_err_t</span> (*control)(<span class="keyword">struct</span> rt_serial_device *serial, <span class="type">int</span> cmd, <span class="type">void</span> *arg);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> (*putc)(<span class="keyword">struct</span> rt_serial_device *serial, <span class="type">char</span> c);</span><br><span class="line">    <span class="type">int</span> (*getc)(<span class="keyword">struct</span> rt_serial_device *serial);</span><br><span class="line"></span><br><span class="line">    <span class="type">rt_size_t</span> (*dma_transmit)(<span class="keyword">struct</span> rt_serial_device *serial, <span class="type">rt_uint8_t</span> *buf, <span class="type">rt_size_t</span> size, <span class="type">int</span> direction);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/******************* RS485设备数据结构和接口 *****************/</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> RS485_DEVICE_CTRL_TIMEOUT       0x05    <span class="comment">/* 接RT_DEVICE_CTRL_CLOSE后面 */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> RS485_EVENT_TX_IND              0x06    <span class="comment">/* 接RT_SERIAL_EVENT_RX_TIMEOUT后面 */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> RS485_TIMEOUT_CONFIG_DEFAULT    \</span></span><br><span class="line"><span class="meta">    &#123;                                   \</span></span><br><span class="line"><span class="meta">        .frameInterval = 3.5,           \</span></span><br><span class="line"><span class="meta">        .recvTimeout = 2000,            \</span></span><br><span class="line"><span class="meta">    &#125;</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">usart_cache</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">uint8_t</span> *buffer;    <span class="comment">/* 缓冲区首地址 */</span></span><br><span class="line">    <span class="type">uint16_t</span> size;      <span class="comment">/* 缓冲区大小，单位byte */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rs485_cfg</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">char</span> *tmr_name;     <span class="comment">/* 1ms硬件定时器设备名 */</span></span><br><span class="line">    <span class="type">uint8_t</span> rts_mode;   <span class="comment">/* rts接收控制：0-低电平接收；1-高电平接收 */</span></span><br><span class="line">    <span class="type">rt_base_t</span> rts_pin;  <span class="comment">/* rts引脚pin编码：为-1时，不使用rts */</span></span><br><span class="line">                        <span class="comment">/* 分帧回调 */</span></span><br><span class="line">    <span class="type">rt_err_t</span> (*split_frame)(<span class="type">rt_device_t</span> dev, <span class="type">rt_size_t</span> size);</span><br><span class="line">    </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">usart_cache</span> <span class="title">rx_cache</span>;</span>        <span class="comment">/* 接收缓冲信息 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">usart_cache</span> <span class="title">tx_cache</span>;</span>        <span class="comment">/* 发送缓冲信息 */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rs485_timeout</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">float</span> frameInterval;                <span class="comment">/* 帧间隔字节数，单位byte */</span></span><br><span class="line">    <span class="type">uint16_t</span> recvTimeout;               <span class="comment">/* 接收超时时间，单位ms */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rs485_cache</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">uint16_t</span> rxTimeCnt;                 <span class="comment">/* 接收字节间隔超时时间计数 */</span></span><br><span class="line">    <span class="type">uint16_t</span> rxTimeout;                 <span class="comment">/* 接收字节间隔超时时间 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rt_mailbox</span> <span class="title">rxMbox</span>;</span>           <span class="comment">/* 接收邮箱 */</span></span><br><span class="line">    <span class="type">uint8_t</span> mbPool[<span class="number">2</span> * <span class="number">4</span>];              <span class="comment">/* 接收邮件数 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rt_ringbuffer</span> <span class="title">rxRingBuffer</span>;</span>  <span class="comment">/* 接收缓冲区rb信息 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rt_ringbuffer</span> <span class="title">txRingBuffer</span>;</span>  <span class="comment">/* 发送缓冲区rb信息 */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rs485_device</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rt_serial_device</span> <span class="title">serial</span>;</span>     <span class="comment">/* 串口设备 */</span></span><br><span class="line">    <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">rs485_ops</span> *<span class="title">ops</span>;</span>        <span class="comment">/* rs485设备接口 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rs485_cfg</span> *<span class="title">cfg</span>;</span>              <span class="comment">/* rs485设备硬件配置 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rs485_cache</span> <span class="title">cache</span>;</span>           <span class="comment">/* rs485设备收发缓存 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rs485_timeout</span> <span class="title">timeout</span>;</span>       <span class="comment">/* rs485设备时间参数 */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rs485_ops</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="comment">/* 串口中断发送 */</span></span><br><span class="line">    <span class="type">int</span> (*int_putc)(<span class="keyword">struct</span> rs485_device *rs485, <span class="type">char</span> c);</span><br><span class="line">    <span class="comment">/* 串口中断接收 */</span></span><br><span class="line">    <span class="type">int</span> (*int_getc)(<span class="keyword">struct</span> rs485_device *rs485);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>RS485设备层功能函数说明：对于RS485层的功能函数来说，使用static变量修饰函数定义；除static修饰的7个功能函数外，为使串口中断里的数据接收&#x2F;发送逻辑、1ms硬件定时器中断里帧超时信号发送逻辑固化，提供2个非static修饰的接口在硬件中断调用：</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 字符接收超时时间计算。</span></span><br><span class="line"><span class="comment"> * @param : [in]    baud            - 波特率</span></span><br><span class="line"><span class="comment"> *                  frameInterval   - 帧间隔字符数</span></span><br><span class="line"><span class="comment"> *          [out]   none</span></span><br><span class="line"><span class="comment"> * @return:         timeout         - 超时时间</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">uint16_t</span> <span class="title function_">frame_interval_timeout_calc</span><span class="params">(<span class="type">rt_uint32_t</span> baud, <span class="type">float</span> frameInterval)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : serial设备初始化。</span></span><br><span class="line"><span class="comment"> * @param : [in]    dev     - 设备对象</span></span><br><span class="line"><span class="comment"> *          [out]   none</span></span><br><span class="line"><span class="comment"> * @return:         RT_EOK  - 成功</span></span><br><span class="line"><span class="comment"> *                  other   - 失败</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">rt_err_t</span> <span class="title function_">rt_serial_init</span><span class="params">(<span class="type">rt_device_t</span> dev)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 串口设备打开。</span></span><br><span class="line"><span class="comment"> * @param : [in]    serial  - 串口设备句柄</span></span><br><span class="line"><span class="comment"> *                  oflag   - 当只使用RT_DEVICE_FLAG_STREAM时，作为查询方式打开；</span></span><br><span class="line"><span class="comment"> *                              其他方式则使用中断收发方式打开。</span></span><br><span class="line"><span class="comment"> *          [out]   none</span></span><br><span class="line"><span class="comment"> * @return:         RT_EOK  - 成功</span></span><br><span class="line"><span class="comment"> *                  other   - 失败</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">rt_err_t</span> <span class="title function_">rt_serial_open</span><span class="params">(<span class="type">rt_device_t</span> dev, <span class="type">rt_uint16_t</span> oflag)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 串口设备关闭。</span></span><br><span class="line"><span class="comment"> * @param : [in]    serial  - 串口设备句柄</span></span><br><span class="line"><span class="comment"> *          [out]   none</span></span><br><span class="line"><span class="comment"> * @return:         RT_EOK  - 成功</span></span><br><span class="line"><span class="comment"> *                  other   - 失败</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">rt_err_t</span> <span class="title function_">rt_serial_close</span><span class="params">(<span class="type">rt_device_t</span> dev)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 串口设备数据读取（只支持中断方式读取数据）。</span></span><br><span class="line"><span class="comment"> * @param : [in]    serial  - 串口设备句柄</span></span><br><span class="line"><span class="comment"> *                  pos     - not used</span></span><br><span class="line"><span class="comment"> *                  buffer  - 接收缓冲区首地址</span></span><br><span class="line"><span class="comment"> *                  size    - 最大接收字节数</span></span><br><span class="line"><span class="comment"> *          [out]   none</span></span><br><span class="line"><span class="comment"> * @return:         length  - 实际接收字节数</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">rt_size_t</span> <span class="title function_">rt_serial_read</span><span class="params">(<span class="type">rt_device_t</span> dev, <span class="type">rt_off_t</span> pos, <span class="type">void</span> *buffer, <span class="type">rt_size_t</span> size)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 串口设备中断发送。</span></span><br><span class="line"><span class="comment"> * @param : [in]    serial  - 串口设备句柄</span></span><br><span class="line"><span class="comment"> *                  buffer  - 发送缓冲区首地址</span></span><br><span class="line"><span class="comment"> *                  size    - 发送节数</span></span><br><span class="line"><span class="comment"> *          [out]   none</span></span><br><span class="line"><span class="comment"> * @return:         length  - 实际发送字节数</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">rt_size_t</span> <span class="title function_">rt_serial_write</span><span class="params">(<span class="type">rt_device_t</span> dev, <span class="type">rt_off_t</span> pos, <span class="type">const</span> <span class="type">void</span> *buffer, <span class="type">rt_size_t</span> size)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 串口设备控制。</span></span><br><span class="line"><span class="comment"> * @param : [in]    serial  - 串口设备句柄</span></span><br><span class="line"><span class="comment"> *                  cmd     - 控制命令：</span></span><br><span class="line"><span class="comment"> *                              RT_DEVICE_CTRL_CONFIG：修改串口参数</span></span><br><span class="line"><span class="comment"> *                  args    - cmd为RT_DEVICE_CTRL_CONFIG时，args为struct serial_configure结构</span></span><br><span class="line"><span class="comment"> *          [out]   none</span></span><br><span class="line"><span class="comment"> * @return:         ret     - RT_EOK成功，其他失败</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">rt_err_t</span> <span class="title function_">rt_serial_control</span><span class="params">(<span class="type">rt_device_t</span> dev, <span class="type">int</span> cmd, <span class="type">void</span> *args)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : 串口设备的串口中断处理。</span></span><br><span class="line"><span class="comment"> * @param : [in]    serial  - 串口设备句柄</span></span><br><span class="line"><span class="comment"> *                  event   - 中断事件：</span></span><br><span class="line"><span class="comment"> *                              RT_SERIAL_EVENT_RX_IND：接收中断</span></span><br><span class="line"><span class="comment"> *                              RS485_EVENT_TX_IND：发送中断（由rs485设备扩展的中断事件）</span></span><br><span class="line"><span class="comment"> *          [out]   none</span></span><br><span class="line"><span class="comment"> * @return:         none</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">rt_hw_serial_isr</span><span class="params">(<span class="keyword">struct</span> rt_serial_device *serial, <span class="type">int</span> event)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief : rs485设备的定时器中断帧超时处理。</span></span><br><span class="line"><span class="comment"> * @param : [in]    rs485   - rs485设备句柄</span></span><br><span class="line"><span class="comment"> *          [out]   none</span></span><br><span class="line"><span class="comment"> * @return:         none</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">hw_rs485_tmr_isr</span><span class="params">(<span class="keyword">struct</span> rs485_device *rs485)</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-2-2-作ModbusRTU通讯用"><a href="#3-2-2-作ModbusRTU通讯用" class="headerlink" title="3.2.2. 作ModbusRTU通讯用"></a>3.2.2. <a name='ModbusRTU'></a>作ModbusRTU通讯用</h4><p>&emsp;&emsp;当以中断收发的方式打开RS485设备时，RS485设备将作为ModbusRTU的应用场景，具有接收分帧处理、数据中断接收、数据中断发送的基本功能。下面说明作为ModbusRTU应用场景时使用方式：</p>
+<ol>
+<li>硬件驱动的配置参数：ModbusRTU通讯是基于485硬件的通讯方式，在底层串口硬件驱动时，就需要指定485硬件的rts管脚pin码、rts处于接收模式下的电平状态、1ms硬件定时器设备名、帧超时回调函数（这些参数是编译阶段就需要确定的，一般在drv_usart.h文件中指定，便于查阅相应的485硬件信息）。</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> BSP_USING_USART0</span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> USART0_RX_BUFSZ     256</span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> USART0_TX_BUFSZ     256</span></span><br><span class="line">    <span class="meta">#<span class="keyword">ifndef</span> USART0_CFG</span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> USART0_CFG                              \</span></span><br><span class="line"><span class="meta">        &#123;                                           \</span></span><br><span class="line"><span class="meta">            .name = <span class="string">&quot;modbus&quot;</span>,                       \</span></span><br><span class="line"><span class="meta">            .uart = UART0,                          \</span></span><br><span class="line"><span class="meta">            .ClockSrc = CMU_OPCCR1_UART0CKS_APBCLK, \</span></span><br><span class="line"><span class="meta">            .irqn = USART0_INT_IRQn,                \</span></span><br><span class="line"><span class="meta">            .priority = USART0_INT_PRIO,            \</span></span><br><span class="line"><span class="meta">            .rx_port = USART0_RX_PORT,              \</span></span><br><span class="line"><span class="meta">            .rx_pin = USART0_RX_PIN,                \</span></span><br><span class="line"><span class="meta">            .tx_port = USART0_TX_PORT,              \</span></span><br><span class="line"><span class="meta">            .tx_pin = USART0_TX_PIN,                \</span></span><br><span class="line"><span class="meta">            .func_af = 0,                           \</span></span><br><span class="line"><span class="meta">        &#125;</span></span><br><span class="line">    <span class="meta">#<span class="keyword">endif</span> <span class="comment">/* USART0_CFG */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* BSP_USING_USART0 */</span></span></span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>将RS485设备配置为ModbusRTU应用的使用方式：有了相应的485硬件注册到RT-Thread的设备管理后，就使用标准Device的方式操作RS485设备：</li>
+</ol>
+<ul>
+<li>查找：首先查找相应的RS485设备，使用rt_device_find接口从设备管理器中获取RS485设备句柄：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">rt_device_t</span> modbus = rt_device_find(<span class="string">&quot;modbus&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+
+<ul>
+<li>配置：配置串口参数（串口默认波特率为115200bps），当需要根据配置参数更改串口通讯参数时，通过rt_device_contorl接口重新初始化&#x2F;修改串口参数；配置作为Modbus应用时的RS485设备时间参数：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">serial_configure</span> <span class="title">config</span> =</span> RT_SERIAL_CONFIG_DEFAULT;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rs485_timeout</span> <span class="title">timeout</span> =</span> RS485_TIMEOUT_CONFIG_DEFAULT;</span><br><span class="line"></span><br><span class="line">config.baud_rate = BAUD_RATE_9600;</span><br><span class="line">config.data_bits = DATA_BITS_8;</span><br><span class="line">config.parity = PARITY_NONE;</span><br><span class="line">config.stop_bits = STOP_BITS_1;</span><br><span class="line">rt_device_control(modbus, RT_DEVICE_CTRL_CONFIG, (<span class="type">void</span> *)&amp;config));</span><br><span class="line"></span><br><span class="line">timeout.frameInterval = <span class="number">3.5</span>;</span><br><span class="line">timeout.recvTimeout = <span class="number">2000</span>;</span><br><span class="line">rt_device_control(modbus, RS485_DEVICE_CTRL_TIMEOUT, (<span class="type">void</span> *)&amp;timeout);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>打开：配置完通讯参数后，需要指定RS485设备作为ModbusRTU应用功能打开，使用rt_device_open来为RS485设备选择打开模式，当open flag为非RT_DEVICE_FLAG_STREAM时，RS485设备默认以ModbusRTU的方式打开，其具有ModbusRTU协议的接收分帧处理、数据中断接收、数据中断发送的基本功能：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rt_device_open(modbus, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_INT_TX));</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>读&#x2F;写数据：经过上面正确的查找、配置参数、打开模式选择的操作后，RS485设备已经具备数据接收的能力了：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rt_device_read(modbus, <span class="number">0</span>, pbuf, bytes);</span><br><span class="line">rt_device_write(modbus, <span class="number">0</span>, pbuf, bytes);</span><br></pre></td></tr></table></figure>
+
+<h4 id="3-2-3-作Console调试用"><a href="#3-2-3-作Console调试用" class="headerlink" title="3.2.3. 作Console调试用"></a>3.2.3. <a name='Console'></a>作Console调试用</h4><p>&emsp;&emsp;当以流模式方式打开RS485设备时，RS485设备将作为Console的应用场景，具有数据中断接收、数据中断发送的基本功能。下面说明为Console应用场景时使用方式：</p>
+<p>&emsp;&emsp;RT-Thread的Console是基于serial设备上的调试应用，将RS485设备替换serial设备的接口实现后，应当兼容Console的调试信息输入、输出。基于调试阶段使用Console输出时不影响调用线程的运行时序的考虑，在系统正常启动后，需将Console的输出方式更改为中断输出方式。而操作系统在启动过程中会关总中断，所以在启动过程中只允许Console使用查询方式输出。观察到系统启动过程中到启动完成，都分别open了Console设备，且两次open标志传参不同，因此在rt_serial_open接口中对不同传参做了兼容，实现系统启动完成后，自动将Console由查询输出方式切换为中断输出方式：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 系统启动过程中open Console设备：以查询收发、流模式打开Console设备 */</span></span><br><span class="line">rt_device_open(new_device, RT_DEVICE_OFLAG_RDWR|RT_DEVICE_FLAG_STREAM);</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 系统启动完成后open Console设备：以中断接收、流模式打开Console设备 */</span></span><br><span class="line">rt_device_open(dev, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM);</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>硬件驱动的配置参数：当使用485硬件作为Console调试应用时，仍需指定485硬件的rts管脚pin码、rts处于接收模式下的电平状态，不同于ModbusRTU应用的硬件驱动配置，1ms硬件定时器设备名、帧超时回调函数这些参数都无需指定。</li>
+</ol>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifdef</span> BSP_USING_USART2</span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> USART2_RX_BUFSZ     64</span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> USART2_TX_BUFSZ     1024</span></span><br><span class="line">    <span class="meta">#<span class="keyword">ifndef</span> USART2_CFG</span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> USART2_CFG                              \</span></span><br><span class="line"><span class="meta">        &#123;                                           \</span></span><br><span class="line"><span class="meta">            .name = RT_CONSOLE_DEVICE_NAME,         \</span></span><br><span class="line"><span class="meta">            .uart = UART2,                          \</span></span><br><span class="line"><span class="meta">            .ClockSrc = 0,                          \</span></span><br><span class="line"><span class="meta">            .irqn = USART2_INT_IRQn,                \</span></span><br><span class="line"><span class="meta">            .priority = USART2_INT_PRIO,            \</span></span><br><span class="line"><span class="meta">            .rx_port = USART2_RX_PORT,              \</span></span><br><span class="line"><span class="meta">            .rx_pin = USART2_RX_PIN,                \</span></span><br><span class="line"><span class="meta">            .tx_port = USART2_TX_PORT,              \</span></span><br><span class="line"><span class="meta">            .tx_pin = USART2_TX_PIN,                \</span></span><br><span class="line"><span class="meta">            .func_af = 0,                           \</span></span><br><span class="line"><span class="meta">        &#125;</span></span><br><span class="line">    <span class="meta">#<span class="keyword">endif</span> <span class="comment">/* USART2_CFG */</span></span></span><br><span class="line">    <span class="meta">#<span class="keyword">ifndef</span> RS485_CONSOLE_CFG</span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> RS485_CONSOLE_CFG                       \</span></span><br><span class="line"><span class="meta">        &#123;                                           \</span></span><br><span class="line"><span class="meta">            .tmr_name = NULL,                       \</span></span><br><span class="line"><span class="meta">            .rts_mode = 0,                          \</span></span><br><span class="line"><span class="meta">            .rts_pin = -1,                          \</span></span><br><span class="line"><span class="meta">            .split_frame = rs485_console_isr,       \</span></span><br><span class="line"><span class="meta">            .rx_cache = &#123;                           \</span></span><br><span class="line"><span class="meta">                .buffer = &amp;usart2_rx_buffer[0],     \</span></span><br><span class="line"><span class="meta">                .size = USART2_RX_BUFSZ,            \</span></span><br><span class="line"><span class="meta">            &#125;,                                      \</span></span><br><span class="line"><span class="meta">            .tx_cache = &#123;                           \</span></span><br><span class="line"><span class="meta">                .buffer = &amp;usart2_tx_buffer[0],     \</span></span><br><span class="line"><span class="meta">                .size = USART2_TX_BUFSZ,            \</span></span><br><span class="line"><span class="meta">            &#125;,                                      \</span></span><br><span class="line"><span class="meta">        &#125;</span></span><br><span class="line">    <span class="meta">#<span class="keyword">endif</span> <span class="comment">/* RS485_CONSOLE_CFG */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* BSP_USING_USART2 */</span></span></span><br></pre></td></tr></table></figure>
+
+
+<ol start="2">
+<li>将RS485设备配置为Console应用的使用方式：用户无需再次对Console应用编程，RT-Thread已经将完备的Finsh提供给我们，只需要用宏RT_USING_CONSOLE即可使用调试功能。</li>
+</ol>
+<h2 id="4-风险识别"><a href="#4-风险识别" class="headerlink" title="4. 风险识别"></a>4. <a name='-1'></a>风险识别</h2><p>&emsp;&emsp;基于平台开发RS485设备驱动，由于不能覆盖全部应用场景，讨论出模块设计存在的风险点：</p>
+<ol>
+<li>帧空闲处理：已知的产品中，均使用ModbusRTU协议的帧超时作为从设备完整接收到一帧的处理，当出现更高要求的帧间隔超时时间的协议时，需要开放帧超时时间计算函数给用户调用。</li>
+<li>一个通讯线程有且只有一个硬件设备：结合现有产品的实际应用，一个通讯线程只对应一个串口设备，因此不存在多个任务竞争同一片发送缓冲区资源的问题。所以在该RS485设备实际应用时，务必不要在多线程操作同一个485硬件设备，造成资源访问冲突。</li>
+<li>异步发送机制：设计之初RS485设备的发送接口中将数据搬移到发送缓冲区到串口真正发送数据是个异步的操作，异步机制需注意串口资源问题:<ul>
+<li>该RS485设备的发送缓冲区大小是否合适？由于异步的原因，MCU很快的将各个配置的数据搬移到发送缓冲区，因此发送缓冲区存在数据溢出问题。</li>
+<li>接收超时时间设置是否合理？以踩过坑的8209为例，上电初始化时不仅会对8209做一些配置，还会在一堆的配置后面读取8209状态；当接收超时时间设置的太短，而发送缓冲区里填充了很多8209的配置数据时，会导致很快从读8209状态接口退出，但实际上串口还没发送读8209状态的命令。</li>
+</ul>
+</li>
+</ol>
+
+        </div>
+
+        
+            <section class="post-copyright">
+                
+                    <p class="copyright-item">
+                        <span>Author:</span>
+                        <span>nia-ike</span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>Permalink:</span>
+                        <span><a href="http://example.com/2023/11/18/%E5%9F%BA%E4%BA%8ERT-Thread%E8%AE%BE%E5%A4%87%E6%A1%86%E6%9E%B6%E7%9A%84RS485%E8%AE%BE%E5%A4%87%E5%BC%80%E5%8F%91/">http://example.com/2023/11/18/%E5%9F%BA%E4%BA%8ERT-Thread%E8%AE%BE%E5%A4%87%E6%A1%86%E6%9E%B6%E7%9A%84RS485%E8%AE%BE%E5%A4%87%E5%BC%80%E5%8F%91/</a></span>
+                    </p>
+                
+                
+                    <p class="copyright-item">
+                        <span>License:</span>
+                        <span>Copyright (c) 2019 <a target="_blank" rel="noopener" href="http://creativecommons.org/licenses/by-nc/4.0/">CC-BY-NC-4.0</a> LICENSE</span>
+                    </p>
+                
+                
+                     <p class="copyright-item">
+                         <span>Slogan:</span>
+                         <span>Do you believe in <strong>DESTINY</strong>?</span>
+                     </p>
+                
+
+            </section>
+        
+        <section class="post-tags">
+            <div>
+                <span>Tag(s):</span>
+                <span class="tag">
+                    
+                    
+                        <a href="/tags/RT-Thread%E8%AE%BE%E5%A4%87%E6%A1%86%E6%9E%B6/"># RT-Thread设备框架</a>
+                    
+                        <a href="/tags/RS485%E8%AE%BE%E5%A4%87/"># RS485设备</a>
+                    
+                        
+                </span>
+            </div>
+            <div>
+                <a href="javascript:window.history.back();">back</a>
+                <span>· </span>
+                <a href="/">home</a>
+            </div>
+        </section>
+        <section class="post-nav">
+            
+            
+        </section>
+
+
+    </article>
+</div>
+
+            </div>
+            <footer id="footer" class="footer">
+    <div class="copyright">
+        <span>© nia-ike | Powered by <a href="https://hexo.io" target="_blank">Hexo</a> & <a href="https://github.com/Siricee/hexo-theme-Chic" target="_blank">Chic</a></span>
+    </div>
+</footer>
+
+    </div>
+</body>
+
+</html>
